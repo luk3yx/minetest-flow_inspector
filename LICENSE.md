@@ -1,3 +1,13 @@
+# License of media
+
+flow_inspector_bg.png, flow_inspector_padding.png, and
+flow_inspector_selection.png:
+[CC0](https://creativecommons.org/publicdomain/zero/1.0/)
+
+# License of code
+
+GNU LGPLv3.0+
+
 ### GNU LESSER GENERAL PUBLIC LICENSE
 
 Version 3, 29 June 2007
