@@ -1,6 +1,8 @@
 # Flow inspector
 
-A probably buggy inspector for flow GUIs to help with debugging layouting.
+A probably buggy[^1] inspector for flow GUIs to help with debugging layouting.
+
+[^1]: I'm not really happy with how hacky this mod is but it works.
 
 ## Usage
 
