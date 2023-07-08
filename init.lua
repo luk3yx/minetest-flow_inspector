@@ -236,7 +236,8 @@ end
 local function run_debug_shell(player, ctx)
     print()
     print("The server will be unresponsive while the debug shell is running.")
-    print("Press Ctrl+D to exit the debug shell.")
+    print("Type 'cont' to exit the debug shell.")
+
     local name = player:get_player_name()
     if minetest.global_exists("dbg") then
         dbg.dd()
@@ -249,7 +250,6 @@ local function run_debug_shell(player, ctx)
         rawset(_G, "player", nil)
         rawset(_G, "name", nil)
         rawset(_G, "ctx", nil)
-
     end
 
     print()
