@@ -605,8 +605,7 @@ local function wrap_func(func)
     return function(def, ...)
         local node = func(def, ...)
         if debug_infos and type(def) == "table" then
-            local level = def.inspector_getinfo_level or 1
-            debug_infos[node] = debug.getinfo(level + 1)
+            debug_infos[node] = debug.getinfo(2, "Sl")
         end
         return node
     end
