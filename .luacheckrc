@@ -7,6 +7,7 @@ globals = {
 }
 
 read_globals = {
+    'DIR_DELIM',
     'formspec_ast',
     'hud_fs',
     'dump',

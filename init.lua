@@ -349,11 +349,11 @@ inspector = flow.make_gui(function(player, ctx)
         debug_infos = {}
     end
 
-    local t1 = minetest.get_us_time()
+    -- local t1 = minetest.get_us_time()
     local ok, tree = xpcall(function()
         return ictx.inspected_form._build(player, ctx)
     end, debug.traceback)
-    local elapsed = minetest.get_us_time() - t1
+    -- local elapsed = minetest.get_us_time() - t1
 
     -- Show any errors
     if not ok then
