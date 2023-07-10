@@ -599,7 +599,7 @@ inspector = flow.make_gui(function(player, ctx)
     }
 end)
 
--- HACK: Store the line number of created widgets
+-- Store the line number of created widgets
 local function wrap_func(func)
     if type(func) ~= "function" then return func end
     return function(def, ...)
