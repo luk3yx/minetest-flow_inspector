@@ -323,7 +323,7 @@ for i, key in ipairs({"w", "h", "name", "align_h", "align_v", "padding",
 end
 
 local inspector_players = {}
-local inspector
+local inspector, debug_infos
 inspector = flow.make_gui(function(player, ctx)
     -- Catch any warnings printed
     local ictx = ctx[ctx_key]
@@ -343,6 +343,11 @@ inspector = flow.make_gui(function(player, ctx)
     end
 
     local name = player:get_player_name()
+
+    -- Create the debug_infos table if it will be used
+    if not ictx.show_picker and ctx.form[tabheader_name] ~= 2 then
+        debug_infos = {}
+    end
 
     local t1 = minetest.get_us_time()
     local ok, tree = xpcall(function()
@@ -379,6 +384,10 @@ inspector = flow.make_gui(function(player, ctx)
     local node = path_to_elem(ictx.path, tree)
     tree_idx = table.indexof(elements, node)
     ctx.form[table_name] = tree_idx
+
+    -- Get the debug info for the selected node
+    local debug_info = debug_infos and debug_infos[node]
+    debug_infos = nil
 
     -- HACK: Force flow to calculate the size of all elements
     gui.Flow{w = 999, tree}
@@ -465,6 +474,13 @@ inspector = flow.make_gui(function(player, ctx)
         end)
         table.insert(selected_info, 1, S("@1{", human_readable_type(node)))
         selected_info[#selected_info + 1] = "}"
+        if debug_info and debug_info.currentline > 0 then
+            local src = debug_info.short_src:gsub("^%.%.%..-" .. DIR_DELIM ..
+                "mods" .. DIR_DELIM, "..." .. DIR_DELIM)
+            selected_info[#selected_info + 1] = ""
+            selected_info[#selected_info + 1] = S("Created on line @1 in @2",
+                debug_info.currentline, src)
+        end
     end
 
     -- Centre the form and add a background if required
@@ -500,7 +516,13 @@ inspector = flow.make_gui(function(player, ctx)
                 w = 6, h = 10, expand = true, cells = cells,
                 name = table_name,
             },
-            gui.Label{label = ("Build time: %.1f ms"):format(elapsed / 1000)},
+
+            -- The debug.getinfo code will add some overhead making this
+            -- inaccurate
+            -- gui.Label{
+            --     label = ("Build time: %.1f ms"):format(elapsed / 1000)
+            -- },
+
             gui.Checkbox{
                 name = table_name .. "hide_right_pane",
                 label = S("Hide side pane"),
@@ -577,6 +599,32 @@ inspector = flow.make_gui(function(player, ctx)
     }
 end)
 
+-- HACK: Store the line number of created widgets
+local function wrap_func(func)
+    if type(func) ~= "function" then return func end
+    return function(def, ...)
+        local node = func(def, ...)
+        if debug_infos and type(def) == "table" then
+            local level = def.inspector_getinfo_level or 1
+            debug_infos[node] = debug.getinfo(level + 1)
+        end
+        return node
+    end
+end
+
+local gui_mt = getmetatable(gui)
+local old_gui_index = gui_mt.__index
+function gui_mt:__index(key)
+    local res = wrap_func(old_gui_index(self, key))
+    gui[key] = res
+    return res
+end
+
+for k, v in pairs(gui) do
+    gui[k] = wrap_func(v)
+end
+
+-- API functions
 function flow_inspector.enable(player)
     inspector_players[player:get_player_name()] = true
 end
@@ -589,9 +637,8 @@ function flow_inspector.inspect(player, form)
     return inspector:show(player, {[ctx_key] = {inspected_form = form}})
 end
 
-local Form = getmetatable(inspector).__index
-
 -- Monkey patch form:show to load the inspector if enabled
+local Form = getmetatable(inspector).__index
 local old_show = Form.show
 function Form:show(player, ctx)
     if self ~= inspector and inspector_players[player:get_player_name()] then
