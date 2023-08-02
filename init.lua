@@ -29,7 +29,11 @@ local gui = flow.widgets
 local in_terminal = os.getenv("TERM") ~= nil and os.getenv("TERM") ~= ""
 
 -- Returns a human-readable type for the node
-local type_cache = {}
+local type_cache = {
+    tablecolumns = "TableColumns",
+    tableoptions = "TableOptions",
+    scrollbaroptions = "ScrollbarOptions",
+}
 local function human_readable_type(node)
     -- Allow overriding the displayed type
     if node.inspector_type then
@@ -59,7 +63,47 @@ local function human_readable_type(node)
     return type_cache[t]
 end
 
-local function build_elements(node, elements, cells, parents, indexes, indent)
+-- These icons are from Glade under the LGPL v2 license, see LICENSE.md for
+-- more information.
+local icons = {
+    Button = "flow_inspector_widget_button.png",
+    ButtonExit = "flow_inspector_widget_button.png",
+    Checkbox = "flow_inspector_widget_checkbutton.png",
+    Container = "flow_inspector_widget_fixed.png",
+    Dropdown = "flow_inspector_widget_combobox.png",
+    Field = "flow_inspector_widget_entry.png",
+    HBox = "flow_inspector_widget_hbox.png",
+    Hypertext = "flow_inspector_widget_recentchooser.png",
+    Image = "flow_inspector_widget_image.png",
+    ImageButton = "flow_inspector_widget_filechooserbutton.png",
+    ImageButtonExit = "flow_inspector_widget_filechooserbutton.png",
+    ItemImage = "flow_inspector_widget_image.png",
+    ItemImageButton = "flow_inspector_widget_filechooserbutton.png",
+    Label = "flow_inspector_widget_label.png^[colorize:#fff",
+    List = "flow_inspector_widget_flowbox.png",
+    Model = "flow_inspector_widget_glarea.png",
+    Pwdfield = "flow_inspector_widget_entry.png",
+    ScrollableVBox = "flow_inspector_widget_scrollablevbox.png",
+    Scrollbar = "flow_inspector_widget_vscrollbar.png",
+    ScrollbarOptions = "flow_inspector_widget_treestore.png",
+    Stack = "flow_inspector_widget_stack.png",
+    Style = "flow_inspector_widget_drawingarea.png",
+    StyleType = "flow_inspector_widget_drawingarea.png",
+    Tabheader = "flow_inspector_widget_notebook.png",
+    Table = "flow_inspector_widget_treeviewcolumn.png",
+    TableColumns = "flow_inspector_widget_treestore.png^[invert:rgb",
+    TableOptions = "flow_inspector_widget_treestore.png^[invert:rgb",
+    Textarea = "flow_inspector_widget_textview.png",
+    Textlist = "flow_inspector_widget_treestore.png^[invert:rgb",
+    Tooltip = "flow_inspector_widget_texttag.png",
+    VBox = "flow_inspector_widget_vbox.png",
+    Vertlabel = "flow_inspector_widget_label.png^[colorize:#fff^[transform3",
+    ["(internal container)"] = "flow_inspector_widget_vbox.png",
+    ["(internal scrollbar)"] = "flow_inspector_widget_vscrollbar.png",
+}
+
+local function build_elements(node, elements, cells, parents, indexes,
+        id_to_icon, icon_to_id, indent)
     if node.inspector_hidden then
         indent = indent - 1
     else
@@ -77,9 +121,29 @@ local function build_elements(node, elements, cells, parents, indexes, indent)
         end
 
         elements[#elements + 1] = node
+
         cells[#cells + 1] = indent
+
+        local readable_type = human_readable_type(node)
+        local icon = node.inspector_icon or icons[readable_type] or
+            "flow_inspector_widget_default.png"
+        if node.type == "box" and not node.inspector_icon and node.color
+                and node.color:match("^[A-Za-z0-9#]+$") then
+            icon = icon .. "^[multiply:" .. node.color
+        end
+        if node.visible == false then
+            icon = icon .. "^[multiply:#aaa"
+        end
+
+        -- Dynamically allocate icon IDs as needed
+        if not icon_to_id[icon] then
+            icon_to_id[icon] = #id_to_icon + 1
+            id_to_icon[#id_to_icon + 1] = icon
+        end
+        cells[#cells + 1] = icon_to_id[icon]
+
         cells[#cells + 1] = node.visible == false and "#aaa" or "#fff"
-        cells[#cells + 1] = human_readable_type(node)
+        cells[#cells + 1] = readable_type
         cells[#cells + 1] = "#888"
         if node.name and not node.inspector_type then
             cells[#cells + 1] = ("%q"):format(node.name)
@@ -89,7 +153,8 @@ local function build_elements(node, elements, cells, parents, indexes, indent)
     end
 
     for i, n in ipairs(node) do
-        build_elements(n, elements, cells, parents, indexes, indent + 1)
+        build_elements(n, elements, cells, parents, indexes, id_to_icon,
+            icon_to_id, indent + 1)
         parents[n] = node
         indexes[n] = i
     end
@@ -364,8 +429,8 @@ inspector = flow.make_gui(function(player, ctx)
     tree.padding = tree.padding or 0.3
     local add_bgimg = not tree.bgimg and not tree.no_prepend
     local elements, cells, parents, indexes = {}, {}, {}, {}
-    build_elements(tree, elements, cells, parents, indexes, 0)
-
+    local id_to_icon = {align = "inline"}
+    build_elements(tree, elements, cells, parents, indexes, id_to_icon, {}, 0)
 
     local tree_idx = ctx.form[table_name] or 1
     if tree_idx ~= ictx.last_elem then
@@ -503,9 +568,13 @@ inspector = flow.make_gui(function(player, ctx)
         gui.VBox{
             bgimg = "flow_inspector_bg.png", bgimg_middle = 32, padding = 0.3,
             gui.Label{label = S("Flow inspector")},
+            gui.TableOptions{
+                opts = {opendepth = 3},
+            },
             gui.TableColumns{
                 tablecolumns = {
                     {type = "tree", opts = {}},
+                    {type = "image", opts = id_to_icon},
                     {type = "color", opts = {}},
                     {type = "text", opts = {align = "inline"}},
                     {type = "color", opts = {}},
