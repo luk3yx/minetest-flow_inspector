@@ -82,6 +82,7 @@ local icons = {
     Label = "flow_inspector_widget_label.png^[colorize:#fff",
     List = "flow_inspector_widget_flowbox.png",
     Model = "flow_inspector_widget_glarea.png",
+    Padding = "flow_inspector_widget_deprecated.png",
     Pwdfield = "flow_inspector_widget_entry.png",
     ScrollableVBox = "flow_inspector_widget_scrollablevbox.png",
     Scrollbar = "flow_inspector_widget_vscrollbar.png",
@@ -98,8 +99,6 @@ local icons = {
     Tooltip = "flow_inspector_widget_texttag.png",
     VBox = "flow_inspector_widget_vbox.png",
     Vertlabel = "flow_inspector_widget_label.png^[colorize:#fff^[transform3",
-    ["(internal container)"] = "flow_inspector_widget_vbox.png",
-    ["(internal scrollbar)"] = "flow_inspector_widget_vscrollbar.png",
 }
 
 local function build_elements(node, elements, cells, parents, indexes,
@@ -116,8 +115,10 @@ local function build_elements(node, elements, cells, parents, indexes,
             node.inspector_type = "ScrollableVBox"
             node[1].inspector_hidden = true
             node[1][1].inspector_type = "(internal container)"
+            node[1][1].inspector_icon = icons.VBox
             node[2].inspector_hidden = true
             node[3].inspector_type = "(internal scrollbar)"
+            node[3].inspector_icon = icons.Scrollbar
         end
 
         elements[#elements + 1] = node
