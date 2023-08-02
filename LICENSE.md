@@ -1,3 +1,7 @@
+# License of code
+
+[GNU LGPLv3.0+](https://www.gnu.org/licenses/lgpl-3.0.html)
+
 # License of media
 
 flow_inspector_bg.png, flow_inspector_padding.png, and
@@ -16,10 +20,6 @@ flow_inspector_selection.png:
 © 2004-2018 Tristan Van Berkom, Juan Pablo Ugarte, et al.
 © 2001-2006 Joaquin Cuenca Abela, Paolo Borelli, et al.
 © 2001-2006 Ximian, Inc.
-
-# License of code
-
-GNU LGPLv3.0+
 
 # License text
 
