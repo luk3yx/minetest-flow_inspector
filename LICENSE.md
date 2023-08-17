@@ -5,8 +5,7 @@
 # License of media
 
 flow_inspector_bg.png, flow_inspector_padding.png, and
-flow_inspector_selection.png:
-[CC0](https://creativecommons.org/publicdomain/zero/1.0/)
+flow_inspector_selection.png: CC0
 
 ### flow_inspector_widget*.png
 
