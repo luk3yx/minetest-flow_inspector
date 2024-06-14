@@ -716,7 +716,8 @@ local Form = getmetatable(inspector).__index
 for _, func in ipairs({"show", "set_as_inventory_for"}) do
     local old_func = Form[func]
     Form[func] = function(self, player, ctx)
-        if self ~= inspector and inspector_players[player:get_player_name()] then
+        if self ~= inspector and
+                inspector_players[player:get_player_name()] then
             ctx = ctx or {}
             ctx[ctx_key] = ctx[ctx_key] or {show_func = func}
             ctx[ctx_key].inspected_form = self
