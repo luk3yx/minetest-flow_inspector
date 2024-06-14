@@ -231,18 +231,7 @@ local tooltip_properties = {"padding", "expand", "align_h", "align_v",
     "list_name"}
 local function build_overlay(node, elements, parents)
     btn_id = btn_id + 1
-    local btn_name = "flow_inspector:" .. btn_id
     local padding = node.padding or 0
-    local btn = {
-        type = "button", x = -padding, y = -padding, w = 0, h = 0,
-        expand = true, padding = -padding, name = btn_name,
-        visible = not node.inspector_hidden,
-        on_event = function(_, ctx)
-            ctx.form[table_name] = table.indexof(elements, node)
-            ctx[ctx_key].show_picker = nil
-            return true
-        end
-    }
 
     local container
     if #node > 0 then
@@ -279,12 +268,21 @@ local function build_overlay(node, elements, parents)
         tooltip[#tooltip + 1] = "}"
     end
 
+    local btn = {
+        type = "button", x = -padding, y = -padding, w = 0, h = 0,
+        expand = true, padding = -padding,
+        visible = not node.inspector_hidden,
+        tooltip = table.concat(tooltip, "\n"),
+        on_event = function(_, ctx)
+            ctx.form[table_name] = table.indexof(elements, node)
+            ctx[ctx_key].show_picker = nil
+            return true
+        end
+    }
+
     local overlay = {
         type = "stack", expand = node.expand, padding = node.padding,
-        btn,
-        {type = "tooltip", gui_element_name = btn_name,
-            tooltip_text = table.concat(tooltip, "\n")},
-        container
+        btn, container
     }
 
     overlay.x, overlay.y, overlay.w, overlay.h, overlay.align_h,
@@ -632,15 +630,11 @@ inspector = flow.make_gui(function(player, ctx)
 
             -- Only show debug button when running in terminal
             in_terminal and gui.Button{
-                name = table_name .. "debug",
                 label = S("Open debug shell"),
+                tooltip = S("The debug shell will be opened in Minetest's " ..
+                    "console.\nThe server will be unresponsive until the " ..
+                    "debug shell is exited."),
                 on_event = run_debug_shell,
-            } or gui.Nil{},
-            in_terminal and gui.Tooltip{
-                gui_element_name = table_name .. "debug",
-                tooltip_text = S("The debug shell will be opened in " ..
-                    "Minetest's console.\nThe server will be unresponsive " ..
-                    "until the debug shell is exited.")
             } or gui.Nil{},
 
             gui.Button{
