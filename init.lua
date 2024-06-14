@@ -225,12 +225,10 @@ end
 
 -- This function builds a container with buttons to be overlayed on top of the
 -- form for "pick element" functionality
-local btn_id = 0
 local tooltip_properties = {"padding", "expand", "align_h", "align_v",
     "texture_name", "item_name", "color", "on_event", "inventory_location",
     "list_name"}
 local function build_overlay(node, elements, parents)
-    btn_id = btn_id + 1
     local padding = node.padding or 0
 
     local container
