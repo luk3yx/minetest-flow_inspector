@@ -7,7 +7,7 @@ A probably buggy[^1] inspector for flow GUIs to help with debugging layouting.
 ## Usage
 
  - `/inspector`: Toggles the inspector for all flow forms opened with
-    `form:show()`.
+    `form:show()` and `form:set_as_inventory_for()`.
 
 ### Hot reload
 

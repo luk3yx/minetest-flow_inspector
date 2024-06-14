@@ -650,16 +650,21 @@ inspector = flow.make_gui(function(player, ctx)
                     if ictx.confirm_disable then
                         inspector_players[name] = nil
                         ctx[ctx_key] = nil
-                        ictx.inspected_form:show(player, ctx)
+                        local form = ictx.inspected_form
+                        form[ictx.show_func](form, player, ctx)
                         return
                     end
 
                     ictx.confirm_disable = true
                     minetest.after(3, function()
                         player = minetest.get_player_by_name(name)
-                        if player then
+                        if player and ctx[ctx_key] == ictx then
                             ictx.confirm_disable = nil
-                            inspector:update(player)
+                            if ictx.show_func == "set_as_inventory_for" then
+                                inspector:set_as_inventory_for(player, ctx)
+                            else
+                                inspector:update(player)
+                            end
                         end
                     end)
                     return true
@@ -708,15 +713,17 @@ end
 
 -- Monkey patch form:show to load the inspector if enabled
 local Form = getmetatable(inspector).__index
-local old_show = Form.show
-function Form:show(player, ctx)
-    if self ~= inspector and inspector_players[player:get_player_name()] then
-        ctx = ctx or {}
-        ctx[ctx_key] = ctx[ctx_key] or {}
-        ctx[ctx_key].inspected_form = self
-        self = inspector
+for _, func in ipairs({"show", "set_as_inventory_for"}) do
+    local old_func = Form[func]
+    Form[func] = function(self, player, ctx)
+        if self ~= inspector and inspector_players[player:get_player_name()] then
+            ctx = ctx or {}
+            ctx[ctx_key] = ctx[ctx_key] or {show_func = func}
+            ctx[ctx_key].inspected_form = self
+            self = inspector
+        end
+        return old_func(self, player, ctx)
     end
-    return old_show(self, player, ctx)
 end
 
 local old_update = Form.update
