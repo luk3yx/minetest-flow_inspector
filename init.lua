@@ -101,17 +101,6 @@ local icons = {
     Vertlabel = "flow_inspector_widget_label.png^[colorize:#fff^[transform3",
 }
 
-local commonly_incorrect_types = {"name", "label", "default"}
-
-local inspector, debug_infos
-local function get_element_source(debug_info)
-    if debug_info and debug_info.currentline > 0 then
-        local src = debug_info.short_src:gsub("^%.%.%..-" .. DIR_DELIM ..
-            "mods" .. DIR_DELIM, "..." .. DIR_DELIM)
-        return S("Created on line @1 in @2", debug_info.currentline, src)
-    end
-end
-
 local function build_elements(node, elements, cells, parents, indexes,
         id_to_icon, icon_to_id, indent)
     if node.inspector_hidden then
@@ -161,20 +150,6 @@ local function build_elements(node, elements, cells, parents, indexes,
             cells[#cells + 1] = ("%q"):format(node.name)
         else
             cells[#cells + 1] = ""
-        end
-
-        -- Show warnings for types that are wrong (flow does not do this due to
-        -- performance concerns)
-        for _, key in pairs(commonly_incorrect_types) do
-            if node[key] ~= nil and type(node[key]) ~= "string" then
-                local source = debug_infos and
-                    get_element_source(debug_infos[node]) or "unknown location"
-                minetest.log("warning", "[flow_inspector] The \"" .. key ..
-                    "\" attribute in a " .. readable_type .. " element " ..
-                    "(" .. source .. ") should be a string, not \"" ..
-                    type(node[key]) .. "\". This may lead to errors or " ..
-                    "unexpected behaviour.")
-            end
         end
     end
 
@@ -402,6 +377,15 @@ local function translate_error_message(err)
     end
 
     return err
+end
+
+local inspector, debug_infos
+local function get_element_source(debug_info)
+    if debug_info and debug_info.currentline > 0 then
+        local src = debug_info.short_src:gsub("^%.%.%..-" .. DIR_DELIM ..
+            "mods" .. DIR_DELIM, "..." .. DIR_DELIM)
+        return S("Created on line @1 in @2", debug_info.currentline, src)
+    end
 end
 
 -- HACK: Use a metatable so that warnings can be modified until it has to be
@@ -668,10 +652,11 @@ inspector = flow.make_gui(function(player, ctx)
                 captions = {S("Selected element"), S("Context")},
                 draw_border = false
             },
-            gui.Textarea{w = 6, h = 3, expand = true,
+            gui.Textarea{w = 6, h = 3, expand = ictx.error == nil,
                 default = table.concat(selected_info, "\n")},
             gui.Label{label = ictx.error and S("Error") or S("Warnings")},
-            gui.Textarea{w = 6, h = 3, default = warnings},
+            gui.Textarea{w = 6, h = 3, default = warnings,
+                expand = ictx.error ~= nil},
             gui.Button{
                 label = S("Hot reload"),
                 on_event = hot_reload,
@@ -718,13 +703,37 @@ inspector = flow.make_gui(function(player, ctx)
 end)
 
 -- Store the line number of created widgets
+local commonly_incorrect_types = {"name", "label", "default"}
 local function wrap_func(func)
     if type(func) ~= "function" then return func end
     return function(def, ...)
         local node = func(def, ...)
         if debug_infos and type(def) == "table" then
-            debug_infos[node] = debug.getinfo(2, "Sl")
+            local info = debug.getinfo(2, "Sl")
+            debug_infos[node] = info
+
+            -- Show warnings for types that are wrong (flow does not do this
+            -- due to performance concerns)
+            for _, key in pairs(commonly_incorrect_types) do
+                if node[key] ~= nil and type(node[key]) ~= "string" then
+                    local source = get_element_source(info) or "unknown location"
+                    local msg = debug.traceback(
+                        "[flow_inspector] The \"" .. key ..
+                        "\" attribute in a " .. human_readable_type(node) ..
+                        " element (" .. source .. ") should be a string, " ..
+                        "not \"" .. type(node[key]) .. "\". This may lead " ..
+                        "to errors or unexpected behaviour.", 2
+                    )
+
+                    -- Remove flow_inspector from the traceback
+                    msg = msg:match("(.-)\n\t%[C%]: in function 'xpcall'\n" ..
+                        "[^\n]+flow_inspector") or msg
+
+                    minetest.log("warning", msg)
+                end
+            end
         end
+
         return node
     end
 end
