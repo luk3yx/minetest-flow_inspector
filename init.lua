@@ -716,7 +716,7 @@ local function wrap_func(func)
             -- due to performance concerns)
             for _, key in pairs(commonly_incorrect_types) do
                 if node[key] ~= nil and type(node[key]) ~= "string" then
-                    local source = get_element_source(info) or "unknown location"
+                    local source = get_element_source(info) or "unknown file"
                     local msg = debug.traceback(
                         "[flow_inspector] The \"" .. key ..
                         "\" attribute in a " .. human_readable_type(node) ..
