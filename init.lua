@@ -101,6 +101,17 @@ local icons = {
     Vertlabel = "flow_inspector_widget_label.png^[colorize:#fff^[transform3",
 }
 
+local commonly_incorrect_types = {"name", "label", "default"}
+
+local inspector, debug_infos
+local function get_element_source(debug_info)
+    if debug_info and debug_info.currentline > 0 then
+        local src = debug_info.short_src:gsub("^%.%.%..-" .. DIR_DELIM ..
+            "mods" .. DIR_DELIM, "..." .. DIR_DELIM)
+        return S("Created on line @1 in @2", debug_info.currentline, src)
+    end
+end
+
 local function build_elements(node, elements, cells, parents, indexes,
         id_to_icon, icon_to_id, indent)
     if node.inspector_hidden then
@@ -150,6 +161,20 @@ local function build_elements(node, elements, cells, parents, indexes,
             cells[#cells + 1] = ("%q"):format(node.name)
         else
             cells[#cells + 1] = ""
+        end
+
+        -- Show warnings for types that are wrong (flow does not do this due to
+        -- performance concerns)
+        for _, key in pairs(commonly_incorrect_types) do
+            if node[key] ~= nil and type(node[key]) ~= "string" then
+                local source = debug_infos and
+                    get_element_source(debug_infos[node]) or "unknown location"
+                minetest.log("warning", "[flow_inspector] The \"" .. key ..
+                    "\" attribute in a " .. readable_type .. " element " ..
+                    "(" .. source .. ") should be a string, not \"" ..
+                    type(node[key]) .. "\". This may lead to errors or " ..
+                    "unexpected behaviour.")
+            end
         end
     end
 
@@ -367,11 +392,28 @@ local function hot_reload(player, ctx)
     return true
 end
 
+-- Detects errors in flow and translates them into something that makes sense
+local function translate_error_message(err)
+    if err:find("attempt to get length of local", 1, true) and
+            err:find(DIR_DELIM .. "flow" .. DIR_DELIM ..
+                "[^\n]-: in function 'naive_str_width'") then
+        err = "A value in an attribute of an element is not a string, but " ..
+            "flow expects it to be one.\nFull error:\n" .. err
+    end
+
+    return err
+end
+
 -- HACK: Use a metatable so that warnings can be modified until it has to be
 -- converted to a string
 local warnings_mt = {
     __tostring = function(self)
-        if #self == 0 then
+        if self.error then
+            -- Show the error message after warnings, the warnings might help
+            -- to figure out what is causing the error
+            self[#self + 1] = translate_error_message(self.error)
+            self.error = nil
+        elseif #self == 0 then
             return S("No warnings.")
         end
         return table.concat(self, "\n\n")
@@ -385,29 +427,25 @@ for i, key in ipairs({"w", "h", "name", "align_h", "align_v", "padding",
 end
 
 local inspector_players = {}
-local inspector, debug_infos
+local old_log = minetest.log
 inspector = flow.make_gui(function(player, ctx)
     -- Catch any warnings printed
     local ictx = ctx[ctx_key]
-    local warnings
-    if not ictx.error then
-        warnings = setmetatable({}, warnings_mt)
-        local old_log = minetest.log
-        function minetest.log(...)
-            local level, msg = ...
-            if (level == "warning" or level == "deprecated" or
-                    level == "error") and msg then
-                warnings[#warnings + 1] = msg
-            end
-            return old_log(...)
+    local warnings = setmetatable({}, warnings_mt)
+    function minetest.log(...)
+        local level, msg = ...
+        if (level == "warning" or level == "deprecated" or
+                level == "error") and msg then
+            warnings[#warnings + 1] = msg
         end
-        minetest.after(0, function() minetest.log = old_log end)
+        return old_log(...)
     end
+    minetest.after(0, function() minetest.log = old_log end)
 
     local name = player:get_player_name()
 
     -- Create the debug_infos table if it will be used
-    if not ictx.show_picker and ctx.form[tabheader_name] ~= 2 then
+    if not ictx.show_picker then
         debug_infos = {}
     end
 
@@ -452,7 +490,23 @@ inspector = flow.make_gui(function(player, ctx)
     debug_infos = nil
 
     -- HACK: Force flow to calculate the size of all elements
-    gui.Flow{w = 999, tree}
+    local layout_ok, err = xpcall(function()
+        gui.Flow{w = 999, tree}
+    end, debug.traceback)
+    if not layout_ok then
+        ictx.error = err
+        -- The inspector does not like a non-box element being the root
+        tree = gui.Stack{
+            min_h = 1,
+            gui.Label{
+                label = S("Error when laying out GUI"),
+                align_h = "centre"
+            }
+        }
+    end
+
+    -- Show the error message after any warnings
+    warnings.error = ictx.error
 
     if ictx.show_picker then
         -- Build an overlay
@@ -536,12 +590,9 @@ inspector = flow.make_gui(function(player, ctx)
         end)
         table.insert(selected_info, 1, S("@1{", human_readable_type(node)))
         selected_info[#selected_info + 1] = "}"
-        if debug_info and debug_info.currentline > 0 then
-            local src = debug_info.short_src:gsub("^%.%.%..-" .. DIR_DELIM ..
-                "mods" .. DIR_DELIM, "..." .. DIR_DELIM)
-            selected_info[#selected_info + 1] = ""
-            selected_info[#selected_info + 1] = S("Created on line @1 in @2",
-                debug_info.currentline, src)
+        local source = get_element_source(debug_info)
+        if source then
+            selected_info[#selected_info + 1] = source
         end
     end
 
@@ -620,7 +671,7 @@ inspector = flow.make_gui(function(player, ctx)
             gui.Textarea{w = 6, h = 3, expand = true,
                 default = table.concat(selected_info, "\n")},
             gui.Label{label = ictx.error and S("Error") or S("Warnings")},
-            gui.Textarea{w = 6, h = 3, default = ictx.error or warnings},
+            gui.Textarea{w = 6, h = 3, default = warnings},
             gui.Button{
                 label = S("Hot reload"),
                 on_event = hot_reload,
