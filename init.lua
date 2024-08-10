@@ -190,7 +190,7 @@ local auto_align_centre = {
     item_image_button = true, list = true
 }
 local function get_geometry(node, parents)
-    local x, y, w, h = node.x, node.y, node.w, node.h
+    local x, y, w, h = node.x or 0, node.y or 0, node.w or 0, node.h or 0
     local align_h, align_v = node.align_h, node.align_v
     if node.type == "label" then
         y = y - 0.2
