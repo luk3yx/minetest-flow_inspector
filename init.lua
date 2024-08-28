@@ -5,7 +5,7 @@
 --
 -- This program is free software: you can redistribute it and/or modify
 -- it under the terms of the GNU Lesser General Public License as published by
--- the Free Software Foundation, either version 3 of the License, or
+-- the Free Software Foundation, either version 2.1 of the License, or
 -- (at your option) any later version.
 --
 -- This program is distributed in the hope that it will be useful,
@@ -182,7 +182,7 @@ end
 local ctx_key = {}
 
 -- Allow loading flow_inspector multiple times to inspect itself
-local table_name = ("flow_inspector:%x"):format(math.random(0, 2^30))
+local table_name = ("*flow_inspector*%x"):format(math.random(0, 2^30))
 local tabheader_name = table_name .. "_tab"
 
 local auto_align_centre = {
