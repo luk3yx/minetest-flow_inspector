@@ -1,9 +1,9 @@
 max_line_length = 80
 
 globals = {
+    'core',
     'flow_inspector',
     'flow',
-    'minetest',
 }
 
 read_globals = {

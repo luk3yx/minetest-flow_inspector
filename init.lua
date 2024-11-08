@@ -1,5 +1,5 @@
 --
--- Minetest flow inspector
+-- Luanti flow inspector
 --
 -- Copyright © 2023 by luk3yx
 --
@@ -23,7 +23,7 @@
 
 flow_inspector = {}
 
-local S = minetest.get_translator("flow_inspector")
+local S = core.get_translator("flow_inspector")
 local gui = flow.widgets
 
 local in_terminal = os.getenv("TERM") ~= nil and os.getenv("TERM") ~= ""
@@ -303,7 +303,7 @@ local function run_debug_shell(player, ctx)
     print("Type 'cont' to exit the debug shell.")
 
     local name = player:get_player_name()
-    if minetest.global_exists("dbg") then
+    if core.global_exists("dbg") then
         dbg.dd()
     else
         -- Use rawset to bypass undeclared global variable warnings
@@ -359,7 +359,7 @@ local function hot_reload(player, ctx)
     -- Show an error or switch to the new form
     if not ok then
         ictx.error = err
-        minetest.log("error", "Error hot reloading form: " .. err)
+        core.log("error", "Error hot reloading form: " .. err)
     elseif not new_form then
         ictx.error = S("No flow.make_gui call found!")
     else
@@ -413,12 +413,12 @@ for i, key in ipairs({"w", "h", "name", "align_h", "align_v", "padding",
 end
 
 local inspector_players = {}
-local old_log = minetest.log
+local old_log = core.log
 inspector = flow.make_gui(function(player, ctx)
     -- Catch any warnings printed
     local ictx = ctx[ctx_key]
     local warnings = setmetatable({}, warnings_mt)
-    function minetest.log(...)
+    function core.log(...)
         local level, msg = ...
         if (level == "warning" or level == "deprecated" or
                 level == "error") and msg then
@@ -426,7 +426,7 @@ inspector = flow.make_gui(function(player, ctx)
         end
         return old_log(...)
     end
-    minetest.after(0, function() minetest.log = old_log end)
+    core.after(0, function() core.log = old_log end)
 
     local name = player:get_player_name()
 
@@ -435,11 +435,11 @@ inspector = flow.make_gui(function(player, ctx)
         debug_infos = {}
     end
 
-    -- local t1 = minetest.get_us_time()
+    -- local t1 = core.get_us_time()
     local ok, tree = xpcall(function()
         return ictx.inspected_form._build(player, ctx)
     end, debug.traceback)
-    -- local elapsed = minetest.get_us_time() - t1
+    -- local elapsed = core.get_us_time() - t1
 
     -- Show any errors
     if not ok then
@@ -591,8 +591,8 @@ inspector = flow.make_gui(function(player, ctx)
         tree.bgimg_middle = 32
     end
 
-    local win_info = minetest.get_player_window_information and
-        minetest.get_player_window_information(name)
+    local win_info = core.get_player_window_information and
+        core.get_player_window_information(name)
     local size = win_info and win_info.max_formspec_size or {x = 0, y = 0}
     return gui.HBox{
         no_prepend = true, bg_fullscreen = true, spacing = 1, padding = 0,
@@ -686,8 +686,8 @@ inspector = flow.make_gui(function(player, ctx)
                     end
 
                     ictx.confirm_disable = true
-                    minetest.after(3, function()
-                        player = minetest.get_player_by_name(name)
+                    core.after(3, function()
+                        player = core.get_player_by_name(name)
                         if player and ctx[ctx_key] == ictx then
                             ictx.confirm_disable = nil
                             if ictx.show_func == "set_as_inventory_for" then
@@ -731,7 +731,7 @@ local function wrap_func(func)
                     msg = msg:match("(.-)\n\t%[C%]: in function 'xpcall'\n" ..
                         "[^\n]+flow_inspector") or msg
 
-                    minetest.log("warning", msg)
+                    core.log("warning", msg)
                 end
             end
         end
@@ -817,7 +817,7 @@ function Form:close(player)
     return old_close(self, player)
 end
 
-minetest.register_chatcommand("inspector", {
+core.register_chatcommand("inspector", {
     privs = {server = true},
     description = S("Toggles the flow inspector"),
     func = function(name, param)
@@ -831,6 +831,6 @@ minetest.register_chatcommand("inspector", {
     end,
 })
 
-minetest.register_on_leaveplayer(function(player)
+core.register_on_leaveplayer(function(player)
     inspector_players[player:get_player_name()] = nil
 end)

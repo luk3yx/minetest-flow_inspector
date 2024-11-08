@@ -17,15 +17,15 @@ the function passed to `flow.make_gui`. This file must have exactly one
 preserved when hot reloading.
 
 The file containing `flow.make_gui` shouldn't contain any registrations (for
-example `minetest.register_globalstep`) as it may result in them being
+example `core.register_globalstep`) as it may result in them being
 registered multiple times.
 
 ### Open debug shell
 
-If you're running Minetest in a terminal, an "open debug shell" button will
-be shown which will call `debug.debug()` (or `dbg.dd()` if the dbg mod is
-installed) when pressed. `player`, `ctx`, and `name` variables are set when the
-debug shell is open.
+If you're running Luanti (formerly Minetest) in a terminal, an "open debug
+shell" button will be shown which will call `debug.debug()` (or `dbg.dd()` if
+the dbg mod is installed) when pressed. `player`, `ctx`, and `name` variables
+are set when the debug shell is open.
 
 ## API
 
