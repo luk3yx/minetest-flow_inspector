@@ -30,6 +30,7 @@ local in_terminal = os.getenv("TERM") ~= nil and os.getenv("TERM") ~= ""
 
 -- Returns a human-readable type for the node
 local type_cache = {
+    button_url = "ButtonURL",
     tablecolumns = "TableColumns",
     tableoptions = "TableOptions",
     scrollbaroptions = "ScrollbarOptions",
@@ -68,6 +69,7 @@ end
 local icons = {
     Button = "flow_inspector_widget_button.png",
     ButtonExit = "flow_inspector_widget_button.png",
+    ButtonURL = "flow_inspector_widget_button.png",
     Checkbox = "flow_inspector_widget_checkbutton.png",
     Container = "flow_inspector_widget_fixed.png",
     Dropdown = "flow_inspector_widget_combobox.png",
