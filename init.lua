@@ -195,7 +195,7 @@ local function get_geometry(node, parents)
     local x, y, w, h = node.x or 0, node.y or 0, node.w or 0, node.h or 0
     local align_h, align_v = node.align_h, node.align_v
     if node.type == "label" then
-        y = y - 0.2
+        y = y - (node._flow_font_height or 0.4) / 2
         if align_h == "centre" or align_h == "center" then
             align_h = "fill"
         elseif not align_h or align_h == "auto" and parents[node] and
@@ -206,7 +206,7 @@ local function get_geometry(node, parents)
     elseif node.type == "checkbox" then
         y = y - h / 2
     elseif node.type == "list" then
-        w, h = w * 1.25 - 0.25, h * 1.25 - 0.25
+        w, h = node._flow_w or w * 1.25 - 0.25, node._flow_h or h * 1.25 - 0.25
     elseif node.type == "tabheader" and (w or 0) > 0 and (h or 0) > 0 then
         y = y - h
     end
