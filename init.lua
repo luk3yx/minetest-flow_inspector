@@ -105,6 +105,13 @@ local icons = {
 
 local function build_elements(node, elements, cells, parents, indexes,
         id_to_icon, icon_to_id, indent)
+    if type(node) ~= "table" then
+        node = {
+            inspector_type = "(not a widget)",
+            inspector_icon = "flow_inspector_widget_deprecated.png",
+        }
+    end
+
     if node.inspector_hidden then
         indent = indent - 1
     else
@@ -242,7 +249,7 @@ local function build_overlay(node, elements, parents)
 
         -- Copy properties to the overlay
         for _, n in ipairs(node) do
-            if n.x then
+            if type(n) == "table" and n.x then
                 container[#container + 1] = build_overlay(n, elements, parents)
             end
         end
