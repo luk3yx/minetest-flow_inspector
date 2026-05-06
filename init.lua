@@ -645,6 +645,14 @@ inspector = flow.make_gui(function(player, ctx)
                 end,
             },
         },
+
+        -- Reset tablecolumns
+        gui.TableColumns{
+            tablecolumns = {
+                {type = "text", opts = {}},
+            },
+        },
+
         tree,
 
         -- Reset styles
